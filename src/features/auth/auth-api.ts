@@ -33,20 +33,24 @@ const configureIdentityProvider = () => {
   ) {
     providers.push(
       AzureADProvider({
-        clientId: process.env.AZURE_AD_CLIENT_ID!,
-        clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
-        tenantId: process.env.AZURE_AD_TENANT_ID!,
-        async profile(profile) {
+  clientId: process.env.AZURE_AD_CLIENT_ID!,
+  clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
+  tenantId: process.env.AZURE_AD_TENANT_ID!,
+  async profile(profile) {
+    let newProfile = { ...profile, id: profile.sub };
+    // If profile.email is undefined, set it to profile.preferred_username
+    if (!newProfile.email) {
+      newProfile = { ...newProfile, email: profile.preferred_username };
+    }
 
-          const newProfile = {
-            ...profile,
-            // throws error without this - unsure of the root cause (https://stackoverflow.com/questions/76244244/profile-id-is-missing-in-google-oauth-profile-response-nextauth)
-            id: profile.sub,
-            isAdmin: adminEmails?.includes(profile.email.toLowerCase()) || adminEmails?.includes(profile.preferred_username.toLowerCase())
-          }
-          return newProfile;
-        }
-      })
+    // Check if the email (whether original or set to preferred_username) is in the adminEmails list
+    newProfile.isAdmin = adminEmails?.includes(
+      newProfile.email.toLowerCase()
+    );
+
+    return newProfile;
+  },
+})
     );
   }
 
